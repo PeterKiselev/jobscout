@@ -375,9 +375,12 @@ def src_telegram(seen):
 
 def src_linkedin(seen):
     got = {}
-    for q in LINKEDIN_QUERIES:
+    # весь мир (92000000) + Россия (101728296): вакансии с локацией «Russia» открыты по определению
+    for geo, q in [(g, q) for g in (92000000, 101728296) for q in LINKEDIN_QUERIES + ["frontend", "React"]]:
+        if geo == 92000000 and q in ("frontend", "React"):
+            continue  # общие запросы по миру дают сотни нерелевантных вакансий США
         page = fetch("https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search", {
-            "keywords": q, "f_WT": 2, "geoId": 92000000, "f_TPR": f"r{LOOKBACK_DAYS * 86400}", "start": 0,
+            "keywords": q, "f_WT": 2, "geoId": geo, "f_TPR": f"r{LOOKBACK_DAYS * 86400}", "start": 0,
         })
         for card in page.split("<li>")[1:]:
             g = lambda p: html.unescape(re.sub(r"\s+", " ", m.group(1))).strip() if (m := re.search(p, card, re.S)) else ""
@@ -559,7 +562,8 @@ def main():
             continue
         location = it["text"].split("\n", 1)[0]
         anywhere = re.search(r"worldwide|anywhere|any (country|location)|global(ly)? remote|"
-                             r"\b(russia|cis|georgia|armenia|kazakhstan|serbia|emea)\b", location, re.I) or \
+                             r"\b(russia|cis|georgia|armenia|kazakhstan|serbia|emea)\b|росси|грузи|армени|казахстан|сербия|снг",
+                             location, re.I) or \
             re.search(r"work from anywhere|remote[- ]worldwide|any time ?zone|from any country|fully distributed worldwide",
                       it["text"], re.I)
         restricted = re.search(r"authorized to work|work authori[sz]ation|us only|u\.s\. only|must (be based|reside)|"
