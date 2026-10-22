@@ -1,0 +1,8 @@
+# secrets & personal state — never commit
+.env
+*.session
+*.session-journal
+seen.json
+seen.tmp
+log.txt
+__pycache__/
